@@ -1,0 +1,276 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<TrustFrameworkPolicy 
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema" 
+  xmlns="http://schemas.microsoft.com/online/cpim/schemas/2013/06" 
+  PolicySchemaVersion="0.3.0.0" 
+  TenantId="<tenant name>.onmicrosoft.com" 
+  PolicyId="B2C_1A_TrustFrameworkExtensions-SP" 
+  PublicPolicyUri="http://<tenant name>.onmicrosoft.com/B2C_1A_TrustFrameworkExtensions-SP">
+  
+  <BasePolicy>
+    <TenantId><tenant name>.onmicrosoft.com</TenantId>
+    <PolicyId>B2C_1A_TrustFrameworkBase-SP</PolicyId>
+  </BasePolicy>
+
+  <BuildingBlocks>
+
+  <ClaimsSchema>
+  <!-- Added Claims Type  -->    
+   <ClaimType Id="FIRST_FOUR">
+        <DisplayName>FIRST_FOUR</DisplayName>
+        <DataType>string</DataType>
+        <DefaultPartnerClaimTypes>          
+          <Protocol Name="SAML2" PartnerClaimType="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/first_four" />
+        </DefaultPartnerClaimTypes>       
+      </ClaimType>
+
+      <ClaimType Id="site_id">
+        <DisplayName>site_id</DisplayName>
+        <DataType>string</DataType>
+        <DefaultPartnerClaimTypes>          
+          <Protocol Name="SAML2" PartnerClaimType="http://schemas.xmlsoap.org/ws/2005/05/identity/claims/site_id" />
+        </DefaultPartnerClaimTypes>       
+      </ClaimType>
+  </ClaimsSchema>
+
+  <ClaimsTransformations>
+  
+  <!-- Added Claims Transforms  -->    
+      <ClaimsTransformation Id="GetFirstFour" TransformationMethod="StringSubstring">
+        <InputClaims>
+          <InputClaim ClaimTypeReferenceId="surname" TransformationClaimType="inputClaim" />
+        </InputClaims>
+        <InputParameters>
+          <InputParameter Id="startIndex" DataType="int" Value="0" />
+          <InputParameter Id="length" DataType="int" Value="4" />
+        </InputParameters>
+        <OutputClaims>
+          <OutputClaim ClaimTypeReferenceId="FIRST_FOUR" TransformationClaimType="outputClaim" />
+        </OutputClaims>
+      </ClaimsTransformation>
+  
+  </ClaimsTransformations>
+
+  </BuildingBlocks>
+
+  <ClaimsProviders>  
+<!-- ADDED Transform Technical Profile -->
+  <ClaimsProvider>
+  
+   <DisplayName>Cerate First_Four Claim</DisplayName>
+   <TechnicalProfiles>
+     <TechnicalProfile Id="ClaimsTransformation-CreateFirstFourClaim">
+      <DisplayName>Cerate First_Four Claim</DisplayName>
+      <Protocol Name="Proprietary" Handler="Web.TPEngine.Providers.ClaimsTransformationProtocolProvider, Web.TPEngine, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+      <OutputClaims>
+        <OutputClaim ClaimTypeReferenceId="FIRST_FOUR" />
+      </OutputClaims>
+      <OutputClaimsTransformations>
+        <OutputClaimsTransformation ReferenceId="GetFirstFour" />        
+      </OutputClaimsTransformations>      
+    </TechnicalProfile>
+   </TechnicalProfiles>    
+  </ClaimsProvider>
+
+<!-- ADDED SAML TOKEN ISSUER - SP  -->
+  <ClaimsProvider>
+  <DisplayName>Token Issuer</DisplayName>
+  <TechnicalProfiles>
+
+    <!-- SAML Token Issuer technical profile -->
+    <TechnicalProfile Id="Saml2AssertionIssuer">
+      <DisplayName>Token Issuer</DisplayName>
+      <Protocol Name="SAML2"/>
+      <OutputTokenFormat>SAML2</OutputTokenFormat>
+      <Metadata>        
+        <Item Key="IssuerUri">https://<tenant name>.onmicrosoft.com/</Item>
+      </Metadata>
+      <CryptographicKeys>
+        <Key Id="SamlAssertionSigning" StorageReferenceId="B2C_1A_SamlIdpCert"/>
+        <Key Id="SamlMessageSigning" StorageReferenceId="B2C_1A_SamlIdpCert"/>
+      </CryptographicKeys>
+      <InputClaims/>
+      <OutputClaims/>
+      <UseTechnicalProfileForSessionManagement ReferenceId="SM-Saml-issuer"/>
+    </TechnicalProfile>
+
+    <!-- Session management technical profile for SAML based tokens -->
+    <TechnicalProfile Id="SM-Saml-issuer">
+      <DisplayName>Session Management Provider</DisplayName>
+      <Protocol Name="Proprietary" Handler="Web.TPEngine.SSO.SamlSSOSessionProvider, Web.TPEngine, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null"/>
+    </TechnicalProfile>
+
+    </TechnicalProfiles>
+  </ClaimsProvider>
+    <ClaimsProvider>
+      <DisplayName>Local Account SignIn</DisplayName>
+      <TechnicalProfiles>
+         <TechnicalProfile Id="login-NonInteractive">
+          <Metadata>
+            <Item Key="client_id">ProxyIdentityExperienceFrameworkAppId</Item>
+            <Item Key="IdTokenAudience">IdentityExperienceFrameworkAppId</Item>
+          </Metadata>
+          <InputClaims>
+             <!-- NEED TO UPDATE WITH PROPER APPIDS -->
+            <InputClaim ClaimTypeReferenceId="client_id" DefaultValue="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+            <InputClaim ClaimTypeReferenceId="resource_id" PartnerClaimType="resource" DefaultValue="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+          </InputClaims>
+        </TechnicalProfile>
+      </TechnicalProfiles>
+    </ClaimsProvider>
+
+    <!-- ADFS claims provider -->
+    <ClaimsProvider>
+    <DisplayName>Session Management</DisplayName>
+    <TechnicalProfiles>
+      <TechnicalProfile Id="SM-Saml-idp">
+        <DisplayName>Session Management Provider</DisplayName>
+        <Protocol Name="Proprietary" Handler="Web.TPEngine.SSO.SamlSSOSessionProvider, Web.TPEngine, Version=1.0.0.0, Culture=neutral, PublicKeyToken=null" />
+        <Metadata>
+          <Item Key="IncludeSessionIndex">false</Item>
+          <Item Key="RegisterServiceProviders">false</Item>
+        </Metadata>
+      </TechnicalProfile>
+    </TechnicalProfiles>
+    </ClaimsProvider>
+
+    
+    <ClaimsProvider>
+    <Domain>chcalder-labs.com</Domain>
+    <DisplayName>CHCALDER-LABS AD FS</DisplayName>
+    <TechnicalProfiles>
+      <TechnicalProfile Id="Chcalder-Labs-SAML2">
+        <DisplayName>CHCALDER-LABS AD FS</DisplayName>
+        <Description>Login with your CHCALDER-LABS AD FS account</Description>
+        <Protocol Name="SAML2"/>
+        <Metadata>
+          <Item Key="RequestsSigned">true</Item>
+          <Item Key="ResponsesSigned">true</Item>
+          <Item Key="WantsEncryptedAssertions">false</Item>
+          <Item Key="PartnerEntity">https://sts.chcalder-labs.com/FederationMetadata/2007-06/FederationMetadata.xml</Item>
+        </Metadata>
+        <CryptographicKeys>
+          <Key Id="SamlMessageSigning" StorageReferenceId="B2C_1A_SAMLSigningCert"/>
+        </CryptographicKeys>
+        <OutputClaims>
+          <OutputClaim ClaimTypeReferenceId="issuerUserId" PartnerClaimType="userPrincipalName" />
+          <OutputClaim ClaimTypeReferenceId="givenName" PartnerClaimType="given_name"/>
+          <OutputClaim ClaimTypeReferenceId="surname" PartnerClaimType="family_name"/>
+          <OutputClaim ClaimTypeReferenceId="email" PartnerClaimType="email"/>
+          <OutputClaim ClaimTypeReferenceId="displayName" PartnerClaimType="display_name"/>
+          <OutputClaim ClaimTypeReferenceId="site_id" PartnerClaimType="site_id"/>
+          <OutputClaim ClaimTypeReferenceId="identityProvider" DefaultValue="chcalder-labs.com" />
+          <OutputClaim ClaimTypeReferenceId="authenticationSource" DefaultValue="socialIdpAuthentication"/>
+        </OutputClaims>
+        <OutputClaimsTransformations>
+          <OutputClaimsTransformation ReferenceId="CreateRandomUPNUserName"/>
+          <OutputClaimsTransformation ReferenceId="CreateUserPrincipalName"/>
+          <OutputClaimsTransformation ReferenceId="CreateAlternativeSecurityId"/>
+          <OutputClaimsTransformation ReferenceId="CreateSubjectClaimFromAlternativeSecurityId"/>
+        </OutputClaimsTransformations>
+        <UseTechnicalProfileForSessionManagement ReferenceId="SM-Saml-idp"/>
+      </TechnicalProfile>
+    </TechnicalProfiles>
+  </ClaimsProvider>
+
+<!-- Note: Azure B2C is expecting both the message and the assertion to be signed. By default, ADFS only signs the Assertion.
+
+Run this on your ADFS Server:
+Set-AdfsRelyingPartyTrust -TargetName <RP Name> -SamlResponseSignature MessageAndAssertion 
+
+Fed Metadata: https://<tenant name>.b2clogin.com/<tenant name>/<b2c policy name>>/samlp/metadata?idptp=<technical profile>
+Technical Profile https://<tenant name>.b2clogin.com/<tenant name>.onmicrosoft.com/B2C_1A_signup_signin_saml-sp/samlp/metadata?idptp=Chcalder-Labs-SAML2 -->
+
+</ClaimsProviders>
+
+  <UserJourneys>  
+  <UserJourney Id="ADFS-SignUpOrSignIn">
+        <OrchestrationSteps>    
+          <OrchestrationStep Order="1" Type="CombinedSignInAndSignUp" ContentDefinitionReferenceId="api.signuporsignin">
+            <ClaimsProviderSelections>
+              <ClaimsProviderSelection TargetClaimsExchangeId="Chcalder-LabsExchange" />
+              <ClaimsProviderSelection ValidationClaimsExchangeId="LocalAccountSigninEmailExchange" />
+            </ClaimsProviderSelections>
+            <ClaimsExchanges>
+              <ClaimsExchange Id="LocalAccountSigninEmailExchange" TechnicalProfileReferenceId="SelfAsserted-LocalAccountSignin-Email" />
+            </ClaimsExchanges>
+          </OrchestrationStep>
+          <OrchestrationStep Order="2" Type="ClaimsExchange">
+            <Preconditions>
+              <Precondition Type="ClaimsExist" ExecuteActionsIf="true">
+                <Value>objectId</Value>
+                <Action>SkipThisOrchestrationStep</Action>
+              </Precondition>
+            </Preconditions>
+            <ClaimsExchanges>
+              <ClaimsExchange Id="Chcalder-LabsExchange" TechnicalProfileReferenceId="Chcalder-Labs-SAML2" />
+              <ClaimsExchange Id="SignUpWithLogonEmailExchange" TechnicalProfileReferenceId="LocalAccountSignUpWithLogonEmail" />
+            </ClaimsExchanges>
+          </OrchestrationStep>         
+          <!-- For social IDP authentication, attempt to find the user account in the directory. -->
+          <OrchestrationStep Order="3" Type="ClaimsExchange">
+            <Preconditions>
+              <Precondition Type="ClaimEquals" ExecuteActionsIf="true">
+                <Value>authenticationSource</Value>
+                <Value>localAccountAuthentication</Value>
+                <Action>SkipThisOrchestrationStep</Action>
+              </Precondition>
+            </Preconditions>
+            <ClaimsExchanges>
+              <ClaimsExchange Id="AADUserReadUsingAlternativeSecurityId" TechnicalProfileReferenceId="AAD-UserReadUsingAlternativeSecurityId-NoError" />
+            </ClaimsExchanges>
+          </OrchestrationStep>          
+              <!-- Show self-asserted page only if the directory does not have the user account already (i.e. we do not have an objectId). 
+              This can only happen when authentication happened using a social IDP. If local account was created or authentication done
+              using ESTS in step 2, then an user account must exist in the directory by this time. -->
+            <OrchestrationStep Order="4" Type="ClaimsExchange">
+              <Preconditions>
+                <Precondition Type="ClaimsExist" ExecuteActionsIf="true">
+                  <Value>objectId</Value>
+                  <Action>SkipThisOrchestrationStep</Action>
+                </Precondition>
+              </Preconditions>
+              <ClaimsExchanges>
+                <ClaimsExchange Id="SelfAsserted-Social" TechnicalProfileReferenceId="SelfAsserted-Social" />
+              </ClaimsExchanges>
+            </OrchestrationStep>
+
+            <!-- This step reads any user attributes that we may not have received when authenticating using ESTS so they can be sent 
+              in the token. -->
+            <OrchestrationStep Order="5" Type="ClaimsExchange">
+              <Preconditions>
+                <Precondition Type="ClaimEquals" ExecuteActionsIf="true">
+                  <Value>authenticationSource</Value>
+                  <Value>socialIdpAuthentication</Value>
+                  <Action>SkipThisOrchestrationStep</Action>
+                </Precondition>
+              </Preconditions>
+              <ClaimsExchanges>
+                <ClaimsExchange Id="AADUserReadWithObjectId" TechnicalProfileReferenceId="AAD-UserReadUsingObjectId" />
+              </ClaimsExchanges>
+            </OrchestrationStep>
+            <!-- The previous step (SelfAsserted-Social) could have been skipped if there were no attributes to collect 
+                from the user. So, in that case, create the user in the directory if one does not already exist 
+                (verified using objectId which would be set from the last step if account was created in the directory. -->
+            <OrchestrationStep Order="6" Type="ClaimsExchange">
+              <Preconditions>
+                <Precondition Type="ClaimsExist" ExecuteActionsIf="true">
+                  <Value>objectId</Value>
+                  <Action>SkipThisOrchestrationStep</Action>
+                </Precondition>
+              </Preconditions>
+              <ClaimsExchanges>
+                <ClaimsExchange Id="AADUserWrite" TechnicalProfileReferenceId="AAD-UserWriteUsingAlternativeSecurityId" />
+              </ClaimsExchanges>
+            </OrchestrationStep>    
+            <OrchestrationStep Order="7" Type="SendClaims" CpimIssuerTechnicalProfileReferenceId="JwtIssuer" />    
+          </OrchestrationSteps>
+          <ClientDefinition ReferenceId="DefaultWeb" />
+        </UserJourney> 
+  
+
+  </UserJourneys>
+
+
+</TrustFrameworkPolicy>
